@@ -3,6 +3,7 @@ import numpy as np
 
 class Flatten(object):
     """ Transforms a PIL image to a flat numpy array. """
+
     def __init__(self):
         pass
 
@@ -12,6 +13,7 @@ class Flatten(object):
 
 class Scale(object):
     """Scale images down to have [0,1] float pixel values"""
+
     def __init__(self, max_value=255):
         self.max_value = max_value
 
@@ -21,6 +23,7 @@ class Scale(object):
 
 class Permute(object):
     """ Apply a fixed permutation to the pixels in the image. """
+
     def __init__(self, permutation):
         self.permutation = permutation
 

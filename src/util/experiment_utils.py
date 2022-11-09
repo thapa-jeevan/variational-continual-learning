@@ -3,13 +3,13 @@ Utilities that abstract the low-level details of experiments, such as standard t
 """
 
 import torch
-import torch.optim as optim
 import torch.nn.functional as F
-from util.operations import task_subset, class_accuracy, bernoulli_log_likelihood
-from util.outputs import write_as_json, save_model, save_generated_image
-from torch.utils.data import DataLoader, Subset
+import torch.optim as optim
+from torch.utils.data import DataLoader
 from tqdm import tqdm
-from util.plot_autograd import make_dot
+
+from src.util.operations import task_subset, class_accuracy, bernoulli_log_likelihood
+from src.util.outputs import write_as_json, save_model, save_generated_image
 
 
 def run_point_estimate_initialisation(model, data, epochs, task_ids, batch_size,
@@ -57,8 +57,9 @@ def run_point_estimate_initialisation(model, data, epochs, task_ids, batch_size,
             optimizer.step()
 
 
-def run_task(model, train_data, train_task_ids, test_data, test_task_ids,
-             task_idx, coreset, epochs, batch_size, save_as, device, lr,
+def run_task(model, task_idx,
+             train_data, train_task_ids, test_data, test_task_ids,
+             coreset, epochs, batch_size, save_as, device, lr,
              y_transform=None, multiheaded=True, train_full_coreset=True,
              summary_writer=None):
     """
@@ -142,7 +143,7 @@ def run_task(model, train_data, train_task_ids, test_data, test_task_ids,
         x = torch.Tensor([x for x, _ in task_data])
         y_true = torch.Tensor([y for _, y in task_data])
         x = x.to(device)
-        y_true = y_true.to(device)
+        # y_true = y_true.to(device)
 
         if y_transform is not None:
             y_true = y_transform(y_true, test_task_idx)
@@ -292,7 +293,8 @@ def run_generative_task(model, train_data, train_task_ids, test_data, test_task_
         # generate a sample of 10 images
         images = x_generated[0:10]
         for count, image in enumerate(images, 0):
-            save_generated_image(torch.squeeze(image.detach()).cpu().numpy(), 'mnist_' + str(test_task_idx) + '_after_' + str(task_idx) + '_' + str(count) + '.png')
+            save_generated_image(torch.squeeze(image.detach()).cpu().numpy(),
+                                 'mnist_' + str(test_task_idx) + '_after_' + str(task_idx) + '_' + str(count) + '.png')
 
         # then test using log likelihood
         task_data = task_subset(test_data, test_task_ids, test_task_idx)

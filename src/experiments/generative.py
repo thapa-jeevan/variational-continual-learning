@@ -1,21 +1,22 @@
 import os
 from datetime import datetime
+
 import torch
 import torch.nn
-from torch.optim import Adam
+from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
-from torchvision.transforms import Compose, ToTensor, Resize
 from torchvision.datasets import MNIST
-from models.contrib import GenerativeVCL
-from models.coreset import RandomCoreset
-from models.deep_models import MnistResNet
-from util.datasets import NOTMNIST
-from util.transforms import Flatten, Scale
-from util.experiment_utils import run_generative_task
-from util.operations import class_accuracy
-from util.outputs import save_model, load_model
-from tensorboardX import SummaryWriter
+from torchvision.transforms import Compose, ToTensor, Resize
 from tqdm import tqdm
+
+from src.models.contrib import GenerativeVCL
+from src.models.coreset import RandomCoreset
+from src.models.deep_models import MnistResNet
+from src.util.datasets import NOTMNIST
+from src.util.experiment_utils import run_generative_task
+from src.util.operations import class_accuracy
+from src.util.outputs import save_model, load_model
+from src.util.transforms import Flatten, Scale
 
 MNIST_FLATTENED_DIM = 28 * 28
 LR = 0.0001

@@ -9,18 +9,21 @@ PyTorch models are defined.
 """
 
 from abc import ABC, abstractmethod
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from layers.variational import VariationalLayer, MeanFieldGaussianLinear
-from models.deep_models import Encoder
-from util.operations import kl_divergence, bernoulli_log_likelihood, normal_with_reparameterization
+
+from src.layers.variational import VariationalLayer, MeanFieldGaussianLinear
+from src.models.deep_models import Encoder
+from src.util.operations import kl_divergence, bernoulli_log_likelihood, normal_with_reparameterization
 
 EPSILON = 1e-8  # Small value to avoid divide-by-zero and log(zero) problems
 
 
 class VCL(nn.Module, ABC):
     """ Base class for all VCL models """
+
     def __init__(self, epsilon=EPSILON):
         super().__init__()
         self.epsilon = epsilon
@@ -188,7 +191,8 @@ class GenerativeVCL(VCL):
         self.encoder = Encoder(x_dim, z_dim * 2, encoder_h_dims)
         # list of heads, each with a list of layers
         self.decoder_heads = nn.ModuleList([
-            nn.ModuleList([MeanFieldGaussianLinear(head_dims[i], head_dims[i + 1], self.ipv) for i in range(len(head_dims) - 1)])
+            nn.ModuleList(
+                [MeanFieldGaussianLinear(head_dims[i], head_dims[i + 1], self.ipv) for i in range(len(head_dims) - 1)])
             for _ in
             range(n_heads)
         ])

@@ -1,14 +1,15 @@
-from abc import ABC, abstractmethod
 import math
+from abc import ABC, abstractmethod
+
 import torch
 import torch.autograd
-import torch.nn.init
 import torch.nn.functional as F
+import torch.nn.init
+# from torch._jit_internal import weak_module, weak_script_method
 from torch.nn.parameter import Parameter
-from torch._jit_internal import weak_module, weak_script_method
 
 
-@weak_module
+# @weak_module
 class VariationalLayer(torch.nn.Module, ABC):
     """
     Base class for any type of neural network layer that uses variational inference. The
@@ -25,6 +26,7 @@ class VariationalLayer(torch.nn.Module, ABC):
     3. Must provide a method for computing the KL divergence between the layer's parameter
     posterior distribution and parameter prior distribution.
     """
+
     def __init__(self, epsilon=1e-8):
         super().__init__()
         self.epsilon = epsilon
@@ -46,7 +48,7 @@ class VariationalLayer(torch.nn.Module, ABC):
         pass
 
 
-@weak_module
+# @weak_module
 class MeanFieldGaussianLinear(VariationalLayer):
     """
     A linear transformation on incoming data of the form :math:`y = w^T x + b`,
@@ -84,7 +86,7 @@ class MeanFieldGaussianLinear(VariationalLayer):
 
         self._initialize_posteriors()
 
-    @weak_script_method
+    # @weak_script_method
     def forward(self, x, sample_parameters=True):
         """ Produces module output on an input. """
         if sample_parameters:

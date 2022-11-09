@@ -1,6 +1,7 @@
 import torch
 import torch.nn
 import torch.nn.functional as F
+
 from torchvision.models import ResNet
 from torchvision.models.resnet import BasicBlock
 
@@ -88,6 +89,7 @@ class Encoder(torch.nn.Module):
 
 class MLPClassifier(torch.nn.Module):
     """ A simple MLP neural network for image classification """
+
     def __init__(self, x_dim, y_dim):
         super().__init__()
         self.x_dim = x_dim
@@ -116,6 +118,7 @@ class MLPClassifier(torch.nn.Module):
 
 class Conv2DClassifier(torch.nn.Module):
     """ A simple convolutional neural network for image classification """
+
     def __init__(self, in_channels, n_classes):
         super().__init__()
         self.conv_1 = torch.nn.Conv2d(in_channels, out_channels=16, kernel_size=3)

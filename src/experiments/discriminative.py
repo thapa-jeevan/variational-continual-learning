@@ -1,23 +1,25 @@
-import torch
-import torch.optim as optim
-import numpy as np
-from torchvision.datasets import MNIST
-from torchvision.transforms import Compose
-from torch.utils.data import ConcatDataset
-from models.vcl_nn import DiscriminativeVCL
-from models.coreset import RandomCoreset
-from util.experiment_utils import run_point_estimate_initialisation, run_task
-from util.transforms import Flatten, Scale, Permute
-from util.datasets import NOTMNIST
-from tensorboardX import SummaryWriter
 import os
 from datetime import datetime
+
+import numpy as np
+import torch
+import torch.optim as optim
+from torch.utils.data import ConcatDataset
+from torch.utils.tensorboard import SummaryWriter
+from torchvision.datasets import MNIST
+from torchvision.transforms import Compose
+
+from src.models.coreset import RandomCoreset
+from src.models.vcl_nn import DiscriminativeVCL
+from src.util.datasets import NOTMNIST
+from src.util.experiment_utils import run_point_estimate_initialisation, run_task
+from src.util.transforms import Flatten, Scale, Permute
 
 MNIST_FLATTENED_DIM = 28 * 28
 LR = 0.001
 INITIAL_POSTERIOR_VAR = 1e-3
 
-device = torch.device("cpu")
+device = torch.device("cuda:0")
 print("Running on device", device)
 
 
@@ -46,6 +48,7 @@ def permuted_mnist():
         n_heads=(N_TASKS if MULTIHEADED else 1),
         initial_posterior_var=INITIAL_POSTERIOR_VAR
     ).to(device)
+
     coreset = RandomCoreset(size=CORESET_SIZE)
 
     mnist_train = ConcatDataset(
@@ -66,6 +69,7 @@ def permuted_mnist():
 
     summary_logdir = os.path.join("logs", "disc_p_mnist", datetime.now().strftime('%b%d_%H-%M-%S'))
     writer = SummaryWriter(summary_logdir)
+
     run_point_estimate_initialisation(model=model, data=mnist_train,
                                       epochs=EPOCHS, batch_size=BATCH_SIZE,
                                       device=device, lr=LR,
@@ -91,7 +95,7 @@ def split_mnist():
     Runs the 'Split MNIST' experiment from the VCL paper, in which each task is
     a binary classification task carried out on a subset of the MNIST dataset.
     """
-    N_CLASSES = 2 # TODO does it make sense to do binary classification with out_size=2 ?
+    N_CLASSES = 2  # TODO does it make sense to do binary classification with out_size=2 ?
     LAYER_WIDTH = 256
     N_HIDDEN_LAYERS = 2
     N_TASKS = 5
@@ -162,7 +166,7 @@ def split_not_mnist():
     is a binary classification task carried out on a subset of the not MNIST
     character recognition dataset.
     """
-    N_CLASSES = 2 # TODO does it make sense to do binary classification with out_size=2 ?
+    N_CLASSES = 2  # TODO does it make sense to do binary classification with out_size=2 ?
     LAYER_WIDTH = 150
     N_HIDDEN_LAYERS = 4
     N_TASKS = 5
@@ -218,7 +222,8 @@ def split_not_mnist():
             coreset=coreset, task_idx=task_idx, epochs=EPOCHS, lr=LR,
             batch_size=BATCH_SIZE, save_as="disc_s_n_mnist", device=device,
             multiheaded=MULTIHEADED, y_transform=binarize_y,
-            train_full_coreset=TRAIN_FULL_CORESET, summary_writer=writer
+            train_full_coreset=TRAIN_FULL_CORESET,
+            summary_writer=writer
         )
 
     writer.close()

@@ -1,17 +1,17 @@
 import argparse
-import experiments.discriminative
-import experiments.generative
 
+from src.experiments import discriminative, permuted_mnist
+from src.experiments import generative
 
 # experiments from the VCL paper that can be carried out
 EXP_OPTIONS = {
-    'disc_p_mnist': experiments.discriminative.permuted_mnist,
-    'disc_s_mnist': experiments.discriminative.split_mnist,
-    'disc_s_n_mnist': experiments.discriminative.split_not_mnist,
-    'gen_mnist': experiments.generative.generate_mnist,
-    'gen_not_mnist': experiments.generative.generate_not_mnist,
-    'gen_mnist_classifier': experiments.generative.train_mnist_classifier,
-    'gen_n_mnist_classifier': experiments.generative.train_not_mnist_classifier
+    'disc_p_mnist': permuted_mnist.permuted_mnist,
+    'disc_s_mnist': discriminative.split_mnist,
+    'disc_s_n_mnist': discriminative.split_not_mnist,
+    'gen_mnist': generative.generate_mnist,
+    'gen_not_mnist': generative.generate_not_mnist,
+    'gen_mnist_classifier': generative.train_mnist_classifier,
+    'gen_n_mnist_classifier': generative.train_not_mnist_classifier
 }
 
 

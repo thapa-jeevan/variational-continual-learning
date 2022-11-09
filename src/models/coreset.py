@@ -1,13 +1,16 @@
-import torch
-import torch.utils.data as data
 from copy import deepcopy
-import numpy as np
-from util.operations import task_subset
-import torch.optim as optim
-from tqdm import tqdm
 from random import shuffle
 
-class Coreset():
+import numpy as np
+import torch
+import torch.optim as optim
+import torch.utils.data as data
+from tqdm import tqdm
+
+from src.util.operations import task_subset
+
+
+class Coreset:
     """
     Base class for the the coreset.  This version of the class has no
     coreset but subclasses will replace the select method.
@@ -53,10 +56,10 @@ class Coreset():
 
         # create dict of train_loaders
         train_loaders = {
-            task_idx :  data.DataLoader(
-                            task_subset(self.coreset, self.coreset_task_ids, task_idx),
-                            batch_size
-                        )
+            task_idx: data.DataLoader(
+                task_subset(self.coreset, self.coreset_task_ids, task_idx),
+                batch_size
+            )
             for task_idx in tasks
         }
 
@@ -97,12 +100,13 @@ class Coreset():
         optimizer = optim.Adam(model.parameters(), lr=self.lr)
         optimizer.load_state_dict(old_optimizer.state_dict())
 
-        task_subsets = [task_subset(self.coreset, self.coreset_task_ids, task_idx) for task_idx in range(up_to_task+1)]
+        task_subsets = [task_subset(self.coreset, self.coreset_task_ids, task_idx) for task_idx in
+                        range(up_to_task + 1)]
         train_loaders = [data.DataLoader(task_data, batch_size) for task_data in task_subsets]
 
         print('CORESET TRAIN')
         for _ in tqdm(range(epochs), 'Epochs: '):
-            for task_idx in torch.randperm(up_to_task+1):
+            for task_idx in torch.randperm(up_to_task + 1):
                 head = task_idx if multiheaded else 0
 
                 for batch in train_loaders[task_idx]:
@@ -117,18 +121,17 @@ class Coreset():
 
 
 class RandomCoreset(Coreset):
-
     def __init__(self, size):
         super().__init__(size)
 
-    def select(self, d : data.Dataset, task_id : int):
+    def select(self, d: data.Dataset, task_id: int):
 
-        new_cs_data, non_cs = data.random_split(d, [self.size, max(0,len(d)-self.size)])
+        new_cs_data, non_cs = data.random_split(d, [self.size, max(0, len(d) - self.size)])
 
         # Need to split the x from the y values to also include the task values.
         # I don't like this way of doing it, but I couldn't find something better.
-        new_cs_x = torch.tensor([x for x, _ in new_cs_data])
-        new_cs_y = torch.tensor([y for _, y in new_cs_data])
+        new_cs_x = torch.tensor(np.array([x for x, _ in new_cs_data]))
+        new_cs_y = torch.tensor(np.array([y for _, y in new_cs_data]))
 
         new_cs = data.TensorDataset(new_cs_x, new_cs_y)
         new_task_ids = torch.full((len(new_cs_data),), task_id)

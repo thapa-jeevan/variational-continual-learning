@@ -12,8 +12,8 @@
 # and free to use. For detailed credits, view the link in the documentation comment.
 
 
-from graphviz import Digraph
 import torch
+from graphviz import Digraph
 from torch.autograd import Variable
 
 

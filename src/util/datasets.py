@@ -1,14 +1,16 @@
 import os
 import shutil
 import urllib.request
+
 import torch.utils.data
 from PIL import Image
+from src.settings import DATA_DIR
 
 _NOT_MNIST_URL_L = 'http://yaroslavvb.com/upload/notMNIST/notMNIST_large.tar.gz'
 _NOT_MNIST_URL_S = 'http://yaroslavvb.com/upload/notMNIST/notMNIST_small.tar.gz'
 _NM_FILE_L = 'notMNIST_large.tar.gz'
 _NM_FILE_S = 'notMNIST_small.tar.gz'
-_DATA_DIR = 'data'
+
 _ASCII_A = 65
 
 
@@ -26,7 +28,7 @@ class NOTMNIST(torch.utils.data.Dataset):
         """
         super().__init__()
 
-        dir_name = os.path.join(_DATA_DIR, 'NOT_MNIST')
+        dir_name = os.path.join(DATA_DIR, 'NOT_MNIST')
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 

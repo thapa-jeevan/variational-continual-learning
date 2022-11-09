@@ -1,20 +1,22 @@
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from util.operations import concatenate_flattened
-import math
 
+from src.util.operations import concatenate_flattened
 
 TRAIN_NUM_SAMPLES = 10
 TEST_NUM_SAMPLES = 50
 EPSILON = 1e-8  # Small value to avoid divide-by-zero and log(zero) problems
 
 
+def empty_parameter_like(t):
+    return nn.Parameter(torch.empty_like(t, requires_grad=True))
+
+
 class DiscriminativeVCL(nn.Module):
-    """
-    A Bayesian multi-head neural network which updates its parameters using
-    variational inference.
-    """
+    """ A Bayesian multi-head neural network which updates its parameters using variational inference."""
 
     def __init__(self, in_size: int, out_size: int, layer_width: int,
                  n_hidden_layers: int, n_heads: int, initial_posterior_var: int):
@@ -34,29 +36,30 @@ class DiscriminativeVCL(nn.Module):
 
     def to(self, *args, **kwargs):
         """
-        Our prior tensors are registered as buffers but the way we access them
-        indirectly (through tuple attributes on the model) is causing problems
-        because when we use `.to()` to move the model to a new device, the prior
-        tensors get moved (because they're registered as buffers) but the
-        references in the tuples don't get updated to point to the new moved
-        tensors. This has no effect when running just on a cpu but breaks the
-        model when trying to run on a gpu. There are a million nicer ways of
-        working around this problem, but for now the easiest thing is to do
-        this: override the `.to()` method and manually update our references to
-        prior tensors.
+        Our prior tensors are registered as buffers but the way we access them indirectly (through tuple attributes
+        on the model) is causing problems because when we use `.to()` to move the model to a new device, the prior
+        tensors get moved (because they're registered as buffers) but the references in the tuples don't get updated
+        to point to the new moved tensors. This has no effect when running just on a cpu but breaks the model when
+        trying to run on a gpu. There are a million nicer ways of working around this problem, but for now the easiest
+        thing is to do this: override the `.to()` method and manually update our references to prior tensors.
         """
         self = super().to(*args, **kwargs)
+
         (prior_w_means, prior_w_log_vars), (prior_b_means, prior_b_log_vars) = self.prior
+
         prior_w_means = [t.to(*args, **kwargs) for t in prior_w_means]
         prior_w_log_vars = [t.to(*args, **kwargs) for t in prior_w_log_vars]
         prior_b_means = [t.to(*args, **kwargs) for t in prior_b_means]
         prior_b_log_vars = [t.to(*args, **kwargs) for t in prior_b_log_vars]
+
         self.prior = (prior_w_means, prior_w_log_vars), (prior_b_means, prior_b_log_vars)
+
         (head_prior_w_means, head_prior_w_log_vars), (head_prior_b_means, head_prior_b_log_vars) = self.head_prior
         head_prior_w_means = [t.to(*args, **kwargs) for t in head_prior_w_means]
         head_prior_w_log_vars = [t.to(*args, **kwargs) for t in head_prior_w_log_vars]
         head_prior_b_means = [t.to(*args, **kwargs) for t in head_prior_b_means]
         head_prior_b_log_vars = [t.to(*args, **kwargs) for t in head_prior_b_log_vars]
+
         self.head_prior = (head_prior_w_means, head_prior_w_log_vars), (head_prior_b_means, head_prior_b_log_vars)
         return self
 
@@ -65,8 +68,9 @@ class DiscriminativeVCL(nn.Module):
         # sample layer parameters from posterior distribution
         (w_means, w_log_vars), (b_means, b_log_vars) = self.posterior
         (head_w_means, head_w_log_vars), (head_b_means, head_b_log_vars) = self.head_posterior
-        sampled_layers = self._sample_parameters(w_means, b_means, w_log_vars, b_log_vars)
-        sampled_head_layers = self._sample_parameters(head_w_means, head_b_means, head_w_log_vars, head_b_log_vars)
+
+        sampled_layers = self._sample_parameters_normal_dist(w_means, b_means, w_log_vars, b_log_vars)
+        sampled_head_layers = self._sample_parameters_normal_dist(head_w_means, head_b_means, head_w_log_vars, head_b_log_vars)
 
         # Apply each layer with its sampled weights and biases
         for weight, bias in sampled_layers:
@@ -126,7 +130,8 @@ class DiscriminativeVCL(nn.Module):
 
         # set the value of the head prior to be the current value of the posterior
         (head_prior_w_means, head_prior_w_log_vars), (head_prior_b_means, head_prior_b_log_vars) = self.head_prior
-        (head_posterior_w_means, head_posterior_w_log_vars), (head_posterior_b_means, head_posterior_b_log_vars) = self.head_posterior
+        (head_posterior_w_means, head_posterior_w_log_vars), (
+            head_posterior_b_means, head_posterior_b_log_vars) = self.head_posterior
         head_prior_w_means[head].data.copy_(head_posterior_w_means[head].data)
         head_prior_w_log_vars[head].data.copy_(head_posterior_w_log_vars[head].data)
         head_prior_b_means[head].data.copy_(head_posterior_b_means[head].data)
@@ -143,11 +148,11 @@ class DiscriminativeVCL(nn.Module):
          (head_prior_b_means, head_prior_b_log_vars)) = self.head_prior
 
         prior_means = concatenate_flattened(
-            prior_w_means + head_prior_w_means[head:head+1] +
-            prior_b_means + head_prior_b_means[head:head+1])
+            prior_w_means + head_prior_w_means[head:head + 1] +
+            prior_b_means + head_prior_b_means[head:head + 1])
         prior_log_vars = concatenate_flattened(
-            prior_w_log_vars + head_prior_w_log_vars[head:head+1] +
-            prior_b_log_vars + head_prior_b_log_vars[head:head+1])
+            prior_w_log_vars + head_prior_w_log_vars[head:head + 1] +
+            prior_b_log_vars + head_prior_b_log_vars[head:head + 1])
         prior_vars = torch.exp(prior_log_vars)
 
         # Posterior
@@ -156,11 +161,11 @@ class DiscriminativeVCL(nn.Module):
          (head_post_b_means, head_post_b_log_vars)) = self.head_posterior
 
         post_means = concatenate_flattened(
-            post_w_means + head_post_w_means[head:head+1] +
-            post_b_means + head_post_b_means[head:head+1])
+            post_w_means + head_post_w_means[head:head + 1] +
+            post_b_means + head_post_b_means[head:head + 1])
         post_log_vars = concatenate_flattened(
-            post_w_log_vars + head_post_w_log_vars[head:head+1] +
-            post_b_log_vars + head_post_b_log_vars[head:head+1])
+            post_w_log_vars + head_post_w_log_vars[head:head + 1] +
+            post_b_log_vars + head_post_b_log_vars[head:head + 1])
         post_vars = torch.exp(post_log_vars)
 
         # Calculate KL for individual normal distributions over parameters
@@ -179,7 +184,7 @@ class DiscriminativeVCL(nn.Module):
 
         return - nn.CrossEntropyLoss()(torch.cat(outputs), y.repeat(num_samples).view(-1))
 
-    def _sample_parameters(self, w_means, b_means, w_log_vars, b_log_vars):
+    def _sample_parameters_normal_dist(self, w_means, b_means, w_log_vars, b_log_vars):
         # sample weights and biases from normal distributions
         sampled_weights, sampled_bias = [], []
         for layer_n in range(len(w_means)):
@@ -215,8 +220,6 @@ class DiscriminativeVCL(nn.Module):
         head_prior_b_log_vars = [torch.zeros_like(t) for t in head_prior_b_means]
 
         self.head_prior = ((head_prior_w_means, head_prior_w_log_vars), (head_prior_b_means, head_prior_b_log_vars))
-
-        empty_parameter_like = lambda t: nn.Parameter(torch.empty_like(t, requires_grad=True))
 
         posterior_w_means = [empty_parameter_like(t) for t in prior_w_means]
         posterior_w_log_vars = [empty_parameter_like(t) for t in prior_w_log_vars]
@@ -280,5 +283,5 @@ class DiscriminativeVCL(nn.Module):
         """
         ((_, posterior_w_log_vars), (_, posterior_b_log_vars)) = self.posterior
         posterior_log_vars = torch.cat([torch.reshape(t, (-1,)) for t in posterior_w_log_vars] + posterior_b_log_vars)
-        posterior_vars     = torch.exp(posterior_log_vars)
+        posterior_vars = torch.exp(posterior_log_vars)
         return torch.mean(posterior_vars).item()

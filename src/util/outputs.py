@@ -1,9 +1,9 @@
 import json
 import os
-import torch
-import numpy as np
-from PIL import Image
 
+import numpy as np
+import torch
+from PIL import Image
 
 # default directory for outputting values
 OUT_DIR = 'out/experiments/'
