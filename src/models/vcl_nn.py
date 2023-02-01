@@ -70,7 +70,8 @@ class DiscriminativeVCL(nn.Module):
         (head_w_means, head_w_log_vars), (head_b_means, head_b_log_vars) = self.head_posterior
 
         sampled_layers = self._sample_parameters_normal_dist(w_means, b_means, w_log_vars, b_log_vars)
-        sampled_head_layers = self._sample_parameters_normal_dist(head_w_means, head_b_means, head_w_log_vars, head_b_log_vars)
+        sampled_head_layers = self._sample_parameters_normal_dist(head_w_means, head_b_means, head_w_log_vars,
+                                                                  head_b_log_vars)
 
         # Apply each layer with its sampled weights and biases
         for weight, bias in sampled_layers:
@@ -178,10 +179,7 @@ class DiscriminativeVCL(nn.Module):
         return 0.5 * kl_elementwise.sum()
 
     def _log_prob(self, x, y, head, num_samples):
-        outputs = []
-        for i in range(num_samples):
-            outputs.append(self.forward(x, head))
-
+        outputs = [self.forward(x, head) for _ in range(num_samples)]
         return - nn.CrossEntropyLoss()(torch.cat(outputs), y.repeat(num_samples).view(-1))
 
     def _sample_parameters_normal_dist(self, w_means, b_means, w_log_vars, b_log_vars):

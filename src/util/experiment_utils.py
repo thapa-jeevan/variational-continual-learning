@@ -1,7 +1,7 @@
 """
 Utilities that abstract the low-level details of experiments, such as standard train-and-eval loops.
 """
-
+import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
@@ -298,7 +298,7 @@ def run_generative_task(model, train_data, train_task_ids, test_data, test_task_
 
         # then test using log likelihood
         task_data = task_subset(test_data, test_task_ids, test_task_idx)
-        x = torch.Tensor([x for x, _ in task_data])
+        x = torch.Tensor(np.array([x for x, _ in task_data]))
         x = x.to(device)
         x_reconstructed = model(x, head)
         task_likelihoods.append(torch.mean(bernoulli_log_likelihood(x, x_reconstructed)).item())

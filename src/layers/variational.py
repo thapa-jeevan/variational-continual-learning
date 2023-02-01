@@ -5,7 +5,6 @@ import torch
 import torch.autograd
 import torch.nn.functional as F
 import torch.nn.init
-# from torch._jit_internal import weak_module, weak_script_method
 from torch.nn.parameter import Parameter
 
 

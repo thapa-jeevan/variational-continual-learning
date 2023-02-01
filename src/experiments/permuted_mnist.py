@@ -47,7 +47,6 @@ def permuted_mnist():
         initial_posterior_var=INITIAL_POSTERIOR_VAR
     ).to(device)
 
-    print(model)
     coreset = RandomCoreset(size=CORESET_SIZE)
 
     mnist_train = ConcatDataset(

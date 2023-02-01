@@ -189,13 +189,13 @@ class GenerativeVCL(VCL):
 
         # encoder produces means and variances for a z-dim diagonal gaussian
         self.encoder = Encoder(x_dim, z_dim * 2, encoder_h_dims)
+
         # list of heads, each with a list of layers
         self.decoder_heads = nn.ModuleList([
             nn.ModuleList(
                 [MeanFieldGaussianLinear(head_dims[i], head_dims[i + 1], self.ipv) for i in range(len(head_dims) - 1)])
-            for _ in
-            range(n_heads)
-        ])
+            for _ in range(n_heads)])
+
         # list of layers in shared network
         self.decoder_shared = nn.ModuleList([
             MeanFieldGaussianLinear(shared_dims[i], shared_dims[i + 1], self.ipv, EPSILON) for i in
@@ -278,6 +278,7 @@ class GenerativeVCL(VCL):
         z_log_std = z_params[:, :, 1]
 
         kl = kl_divergence(z_means, z_log_std)
+
         log_likelihood = torch.zeros(size=(x.size()[0],)).to(self.device)
         for _ in range(sample_n):
             z = normal_with_reparameterization(z_means, torch.exp(z_log_std), self.device).to(self.device)
